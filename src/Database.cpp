@@ -10,7 +10,7 @@ void TheSteelRouteApi::Database::init() {
     QString connectionString =
         "DRIVER={ODBC Driver 18 for SQL Server};"
         "SERVER=localhost;"
-        "DATABASE=SteelRouteDB;"
+        "DATABASE=TheSteelRouteDBv2;"
         "UID=sa;"
         "PWD=TempPa55wd;"
         "TrustServerCertificate=yes;";
