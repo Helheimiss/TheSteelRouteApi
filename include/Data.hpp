@@ -24,6 +24,7 @@ namespace DATA {
             .set_issuer("TheSteelRouteApi")
             .sign(jwt::algorithm::hs256{SECRET_KEY});
 
+        Tokens.insert(token);
         return token;
     }
 }

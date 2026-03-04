@@ -1,6 +1,11 @@
 #include "Database.hpp"
 
-TheSteelRouteApi::Database::Database() {
+
+TheSteelRouteApi::Database::~Database() {
+    db.close();
+}
+
+void TheSteelRouteApi::Database::init() {
     db = QSqlDatabase::addDatabase("QODBC");
     QString connectionString =
         "DRIVER={ODBC Driver 18 for SQL Server};"
@@ -11,12 +16,8 @@ TheSteelRouteApi::Database::Database() {
         "TrustServerCertificate=yes;";
 
     db.setDatabaseName(connectionString);
-    if (!openDatabase())
+    if (!db.open())
         throw std::runtime_error(getLastError().toStdString());
-}
-
-TheSteelRouteApi::Database::~Database() {
-    closeDatabase();
 }
 
 QSqlQuery TheSteelRouteApi::Database::sqlQuery(const QString &query) const {
@@ -29,14 +30,6 @@ QSqlQuery TheSteelRouteApi::Database::sqlQuery() const {
 
 QString TheSteelRouteApi::Database::getLastError() const {
     return db.lastError().text();
-}
-
-bool TheSteelRouteApi::Database::openDatabase() {
-    return db.open();
-}
-
-void TheSteelRouteApi::Database::closeDatabase() {
-    db.close();
 }
 
 QSqlDatabase &TheSteelRouteApi::Database::getDatabase() {

@@ -7,8 +7,10 @@
 namespace TheSteelRouteApi {
     class Database {
     public:
-        Database();
+        Database() = default;
         ~Database();
+
+        void init();
 
         [[nodiscard]] QSqlQuery sqlQuery(const QString &query) const;
         [[nodiscard]] QSqlQuery sqlQuery() const;
@@ -18,9 +20,5 @@ namespace TheSteelRouteApi {
         QSqlDatabase &getDatabase();
     protected:
         QSqlDatabase db;
-
-    private:
-        bool openDatabase();
-        void closeDatabase();
     };
 }
