@@ -49,6 +49,34 @@ public:
         return std::nullopt;
     }
 
+    static std::vector<User> getAllUsers() {
+        std::vector<User> users;
+
+        auto query = DATA::DataBase.sqlQuery();
+        query.prepare("SELECT Id, LastName, FirstName, Email, Phone, Login, PasswordHash, CreatedAt FROM Users;");
+
+        if (!query.exec())
+            return users;
+
+        users.reserve(query.numRowsAffected());
+
+        while (query.next()) {
+            users.emplace_back(User(
+            query.value(0).toString().toStdString(),
+            query.value(1).toString().toStdString(),
+            query.value(2).toString().toStdString(),
+            query.value(3).toString().toStdString(),
+            query.value(4).toString().toStdString(),
+            query.value(5).toString().toStdString(),
+            query.value(6).toString().toStdString(),
+            query.value(7).toString().toStdString())
+            );
+
+        }
+
+        return users;
+    }
+
     friend std::size_t hash_value(const User &obj) {
         std::hash<std::string> hasher;
 
