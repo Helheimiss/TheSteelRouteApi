@@ -10,7 +10,9 @@ namespace TheSteelRouteApi {
         Database();
         ~Database();
 
-        [[nodiscard]] QSqlQuery sqlQuery(const QString &query = QString()) const;
+        [[nodiscard]] QSqlQuery sqlQuery(const QString &query) const;
+        [[nodiscard]] QSqlQuery sqlQuery() const;
+
         [[nodiscard]] QString getLastError() const;
 
         bool openDatabase();

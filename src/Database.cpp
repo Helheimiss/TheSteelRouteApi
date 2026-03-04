@@ -5,7 +5,7 @@ TheSteelRouteApi::Database::Database() {
     QString connectionString =
         "DRIVER={ODBC Driver 18 for SQL Server};"
         "SERVER=localhost;"
-        "DATABASE=DB_TEST;"
+        "DATABASE=SteelRouteDB;"
         "UID=sa;"
         "PWD=TempPa55wd;"
         "TrustServerCertificate=yes;";
@@ -19,6 +19,10 @@ TheSteelRouteApi::Database::~Database() {
 
 QSqlQuery TheSteelRouteApi::Database::sqlQuery(const QString &query) const {
     return QSqlQuery(query, db);
+}
+
+QSqlQuery TheSteelRouteApi::Database::sqlQuery() const {
+    return QSqlQuery(db);
 }
 
 QString TheSteelRouteApi::Database::getLastError() const {
