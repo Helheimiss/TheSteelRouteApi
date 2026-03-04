@@ -1,8 +1,8 @@
 -- Create database
---CREATE DATABASE SteelRouteDB;
+--CREATE DATABASE SteelRouteDBv2;
 --GO
 
-USE SteelRouteDB;
+USE SteelRouteDBv2;
 GO
 
 -- 1. Facilities directory
@@ -41,42 +41,68 @@ CREATE TABLE Drivers (
 CREATE TABLE Clients (
     Id INT PRIMARY KEY IDENTITY(1,1),
     Name NVARCHAR(100) NOT NULL,
-    IsCompany BIT DEFAULT 1,
+    IsCompany BIT DEFAULT 0,
     Phone NVARCHAR(20),
     Email NVARCHAR(50)
 );
 
--- 5. Orders
+-- 5. Services (new table for service types)
+CREATE TABLE Services (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    ServiceName NVARCHAR(100) NOT NULL,
+    Description NVARCHAR(500),
+    BasePrice DECIMAL(10,2),
+    PricePerKm DECIMAL(10,2),  -- Увеличил точность
+    PricePerHour DECIMAL(10,2)  -- Увеличил точность
+);
+
+-- 6. Orders (modified)
 CREATE TABLE Orders (
     Id INT PRIMARY KEY IDENTITY(1,1),
     ClientId INT NOT NULL,
-    OrderDate DATE DEFAULT GETDATE(),
-    Description NVARCHAR(500),
-    FOREIGN KEY (ClientId) REFERENCES Clients(Id)
+    ServiceId INT NOT NULL,
+    OrderDate DATETIME DEFAULT GETDATE(),
+    TripDate DATETIME NOT NULL,
+    RouteFrom NVARCHAR(200) NOT NULL,
+    RouteTo NVARCHAR(200) NOT NULL,
+    Distance DECIMAL(10,2),
+    DurationMinutes INT,
+    PassengerCount INT NOT NULL,
+    TotalPrice DECIMAL(10,2),
+    Status NVARCHAR(50) DEFAULT 'pending_payment',
+    PaymentStatus NVARCHAR(50) DEFAULT 'pending',
+    ConfirmationCode NVARCHAR(10),
+    VehicleId INT,
+    DriverId INT,
+    Notes NVARCHAR(500),
+    FOREIGN KEY (ClientId) REFERENCES Clients(Id),
+    FOREIGN KEY (ServiceId) REFERENCES Services(Id),
+    FOREIGN KEY (VehicleId) REFERENCES Vehicles(Id),
+    FOREIGN KEY (DriverId) REFERENCES Drivers(Id)
 );
 
--- 6. Trips
+-- 7. Trips (modified)
 CREATE TABLE Trips (
     Id INT PRIMARY KEY IDENTITY(1,1),
-    OrderId INT NOT NULL,
+    OrderId INT NOT NULL UNIQUE,
     VehicleId INT NOT NULL,
     DriverId INT NOT NULL,
-    TripDate DATE DEFAULT GETDATE(),
-    RouteFrom NVARCHAR(200),
-    RouteTo NVARCHAR(200),
-    Mileage INT,
+    ActualStartTime DATETIME,
+    ActualEndTime DATETIME,
+    ActualMileage INT,
+    Status NVARCHAR(50) DEFAULT 'scheduled',
     FOREIGN KEY (OrderId) REFERENCES Orders(Id),
     FOREIGN KEY (VehicleId) REFERENCES Vehicles(Id),
     FOREIGN KEY (DriverId) REFERENCES Drivers(Id)
 );
 
--- 7. Maintenance types directory
+-- 8. Maintenance types directory
 CREATE TABLE MaintenanceTypes (
     Id INT PRIMARY KEY IDENTITY(1,1),
     WorkType NVARCHAR(100) NOT NULL
 );
 
--- 8. Maintenance log
+-- 9. Maintenance log
 CREATE TABLE MaintenanceLog (
     Id INT PRIMARY KEY IDENTITY(1,1),
     VehicleId INT NOT NULL,
@@ -89,7 +115,7 @@ CREATE TABLE MaintenanceLog (
     FOREIGN KEY (MaintenanceTypeId) REFERENCES MaintenanceTypes(Id)
 );
 
--- 9. Users and roles
+-- 10. Users and roles
 CREATE TABLE Roles (
     Id INT PRIMARY KEY IDENTITY(1,1),
     RoleName NVARCHAR(50) NOT NULL
@@ -97,10 +123,36 @@ CREATE TABLE Roles (
 
 CREATE TABLE Users (
     Id INT PRIMARY KEY IDENTITY(1,1),
+    ClientId INT,
     Username NVARCHAR(50) NOT NULL UNIQUE,
     PasswordHash NVARCHAR(256) NOT NULL,
+    TempPassword BIT DEFAULT 0,
     RoleId INT NOT NULL,
-    FOREIGN KEY (RoleId) REFERENCES Roles(Id)
+    LastPasswordChange DATETIME,
+    FOREIGN KEY (RoleId) REFERENCES Roles(Id),
+    FOREIGN KEY (ClientId) REFERENCES Clients(Id)
+);
+
+-- 11. Payments (new table)
+CREATE TABLE Payments (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    OrderId INT NOT NULL,
+    Amount DECIMAL(10,2) NOT NULL,
+    PaymentDate DATETIME DEFAULT GETDATE(),
+    CardNumber NVARCHAR(50),
+    CardHolderName NVARCHAR(100),
+    BankCode NVARCHAR(10),
+    Status NVARCHAR(50) DEFAULT 'pending',
+    FOREIGN KEY (OrderId) REFERENCES Orders(Id)
+);
+
+-- 12. Password reset requests (new table)
+CREATE TABLE PasswordResetRequests (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    UserId INT NOT NULL,
+    RequestDate DATETIME DEFAULT GETDATE(),
+    IsUsed BIT DEFAULT 0,
+    FOREIGN KEY (UserId) REFERENCES Users(Id)
 );
 GO
 
@@ -118,42 +170,42 @@ INSERT INTO Facilities (Name, Address) VALUES
 INSERT INTO Vehicles (StateNumber, VIN, Brand, Model, Year, Capacity, PassengerSeats, Status, FacilityId) VALUES
 -- Trucks (heavy)
 ('A123BC', 'XTA12345678901234', 'Scania', 'R500', 2021, 20.0, 2, 'available', 1),
-('B456EN', 'XTA23456789012345', 'MAN', 'TGX', 2020, 22.0, 2, 'on trip', 1),
-('C789NK', 'XTA34567890123456', 'Volvo', 'FH16', 2022, 25.0, 2, 'repair', 1),
+('B456EN', 'XTA23456789012345', 'MAN', 'TGX', 2020, 22.0, 2, 'available', 1),
+('C789NK', 'XTA34567890123456', 'Volvo', 'FH16', 2022, 25.0, 2, 'available', 1),
 ('K123MR', 'XTA45678901234567', 'Mercedes', 'Actros', 2021, 21.5, 2, 'available', 1),
-('M456OR', 'XTA56789012345678', 'DAF', 'XF', 2019, 19.8, 2, 'on trip', 2),
+('M456OR', 'XTA56789012345678', 'DAF', 'XF', 2019, 19.8, 2, 'available', 2),
 ('N789ST', 'XTA67890123456789', 'Scania', 'R450', 2023, 20.5, 2, 'available', 2),
 ('R123UH', 'XTA78901234567890', 'IVECO', 'Stralis', 2020, 21.0, 2, 'available', 3),
 
 -- Gazelles (light trucks)
 ('T234AE', 'XTA89012345678901', 'GAZ', 'Gazelle NEXT', 2022, 1.5, 3, 'available', 1),
-('U345VS', 'XTA90123456789012', 'GAZ', 'Gazelle Business', 2021, 1.5, 3, 'on trip', 1),
+('U345VS', 'XTA90123456789012', 'GAZ', 'Gazelle Business', 2021, 1.5, 3, 'available', 1),
 ('F456EK', 'XTA01234567890123', 'GAZ', 'Gazelle Farmer', 2020, 1.3, 5, 'available', 2),
-('H567MN', 'XTA12345098765432', 'GAZ', 'Gazelle NEXT', 2023, 1.5, 3, 'on trip', 2),
-('C678OR', 'XTA23456109876543', 'GAZ', 'Gazelle Business', 2021, 1.5, 3, 'repair', 3),
+('H567MN', 'XTA12345098765432', 'GAZ', 'Gazelle NEXT', 2023, 1.5, 3, 'available', 2),
+('C678OR', 'XTA23456109876543', 'GAZ', 'Gazelle Business', 2021, 1.5, 3, 'available', 3),
 
 -- Minibuses (passenger)
 ('CH789PT', 'XTA34567210987654', 'Ford', 'Transit', 2022, NULL, 16, 'available', 1),
-('SH890RS', 'XTA45678321098765', 'Mercedes', 'Sprinter', 2023, NULL, 20, 'on trip', 1),
+('SH890RS', 'XTA45678321098765', 'Mercedes', 'Sprinter', 2023, NULL, 20, 'available', 1),
 ('SCH901TU', 'XTA56789432109876', 'Volkswagen', 'Crafter', 2021, NULL, 18, 'available', 2),
 ('E012FH', 'XTA67890543210987', 'Peugeot', 'Boxer', 2020, NULL, 16, 'available', 3),
-('YU123CCH', 'XTA78901654321098', 'Citroen', 'Jumper', 2022, NULL, 16, 'on trip', 2),
+('YU123CCH', 'XTA78901654321098', 'Citroen', 'Jumper', 2022, NULL, 16, 'available', 2),
 ('YA234SHCH', 'XTA89012765432109', 'Renault', 'Master', 2021, NULL, 16, 'available', 1),
 
 -- Additional vehicles
 ('A345YY', 'XTA90123876543210', 'Scania', 'R580', 2022, 22.5, 2, 'available', 3),
-('B456EE', 'XTA01234987654321', 'MAN', 'TGX 18.640', 2023, 24.0, 2, 'on trip', 2),
+('B456EE', 'XTA01234987654321', 'MAN', 'TGX 18.640', 2023, 24.0, 2, 'available', 2),
 ('C567YYA', 'XTA12345098761234', 'Volvo', 'FH 500', 2021, 21.0, 2, 'available', 1),
 ('D678AB', 'XTA23456109872345', 'GAZ', 'Gazelle NEXT', 2022, 1.5, 3, 'available', 1),
-('E789VG', 'XTA34567210983456', 'Ford', 'Transit', 2023, NULL, 16, 'repair', 2),
+('E789VG', 'XTA34567210983456', 'Ford', 'Transit', 2023, NULL, 16, 'available', 2),
 ('F890DE', 'XTA45678321094567', 'Mercedes', 'Sprinter', 2022, NULL, 20, 'available', 3),
 ('Z901JZ', 'XTA56789432105678', 'GAZ', 'Sobol', 2021, 1.0, 6, 'available', 1),
-('I012IK', 'XTA67890543216789', 'UAZ', 'Profy', 2020, 1.5, 2, 'on trip', 2),
+('I012IK', 'XTA67890543216789', 'UAZ', 'Profy', 2020, 1.5, 2, 'available', 2),
 ('K123LM', 'XTA78901654327890', 'Hyundai', 'HD78', 2022, 3.0, 3, 'available', 3),
 ('L234MN', 'XTA89012765438901', 'Isuzu', 'NQR71', 2021, 3.5, 3, 'available', 1),
-('M345NO', 'XTA90123876549012', 'Scania', 'P360', 2020, 18.0, 2, 'on trip', 2),
+('M345NO', 'XTA90123876549012', 'Scania', 'P360', 2020, 18.0, 2, 'available', 2),
 ('N456OP', 'XTA01234987650123', 'Mercedes', 'Atego', 2023, 8.0, 2, 'available', 3),
-('O567PR', 'XTA12345098761245', 'Volvo', 'FL', 2022, 12.0, 2, 'repair', 1);
+('O567PR', 'XTA12345098761245', 'Volvo', 'FL', 2022, 12.0, 2, 'available', 1);
 
 -- 3. Drivers (20 drivers)
 INSERT INTO Drivers (FullName, LicenseNumber, LicenseExpiryDate, MedicalCertExpiryDate, Phone) VALUES
@@ -178,7 +230,13 @@ INSERT INTO Drivers (FullName, LicenseNumber, LicenseExpiryDate, MedicalCertExpi
 ('Pavel Mikhailov', '50JZ901234', '2027-08-13', '2026-07-18', '+7(903)901-23-45'),
 ('Grigory Tarasov', '78IK012345', '2026-03-21', '2026-04-10', '+7(916)012-34-56');
 
--- 4. Clients (15 clients)
+-- 4. Services (СНАЧАЛА заполняем услуги)
+INSERT INTO Services (ServiceName, Description, BasePrice, PricePerKm, PricePerHour) VALUES
+('Passenger Bus Transport', 'Group passenger transportation by bus/minibus', 3000.00, 35.00, 800.00),
+('Cargo Transport', 'Freight transportation by trucks', 5000.00, 50.00, 1200.00),
+('VIP Transfer', 'Luxury passenger transfer', 5000.00, 60.00, 1500.00);
+
+-- 5. Clients
 INSERT INTO Clients (Name, IsCompany, Phone, Email) VALUES
 ('StroyInvest LLC', 1, '+7(495)111-22-33', 'info@stroiinvest.ru'),
 ('IP Petrov A.V.', 0, '+7(916)222-33-44', 'petrov@mail.ru'),
@@ -196,63 +254,35 @@ INSERT INTO Clients (Name, IsCompany, Phone, Email) VALUES
 ('StekloTara LLC', 1, '+7(495)456-78-90', 'steklo@tararu'),
 ('StroyTech LLC', 1, '+7(812)567-89-01', 'teh@stroy.ru');
 
--- 5. Orders (20 orders)
-INSERT INTO Orders (ClientId, OrderDate, Description) VALUES
-(1, '2025-02-01', 'Delivery of building materials to site'),
-(2, '2025-02-02', 'Furniture transportation for client'),
-(3, '2025-02-03', 'Equipment transport'),
-(4, '2025-02-04', 'Food delivery to stores'),
-(5, '2025-02-05', 'Spare parts transport from warehouse'),
-(6, '2025-02-06', 'Corporate employee transport'),
-(7, '2025-02-07', 'Metal products delivery'),
-(8, '2025-02-08', 'Chemical products transport'),
-(9, '2025-02-09', 'Urgent document delivery'),
-(10, '2025-02-10', 'Office relocation'),
-(1, '2025-02-11', 'Additional building materials supply'),
-(2, '2025-02-12', 'Old furniture removal'),
-(3, '2025-02-13', 'Machine tools delivery'),
-(4, '2025-02-14', 'Perishable food transport'),
-(5, '2025-02-15', 'Battery transport'),
-(6, '2025-02-16', 'Delegation transfer'),
-(7, '2025-02-17', 'Reinforcement delivery'),
-(8, '2025-02-18', 'Solvents transport'),
-(9, '2025-02-19', 'Courier delivery'),
-(10, '2025-02-20', 'Office equipment transport');
+-- 6. Roles
+INSERT INTO Roles (RoleName) VALUES 
+('Administrator'),
+('Dispatcher'),
+('Mechanic'),
+('Manager'),
+('Client');
 
--- 6. Trips (30+ records)
-INSERT INTO Trips (OrderId, VehicleId, DriverId, TripDate, RouteFrom, RouteTo, Mileage) VALUES
-(1, 1, 1, '2025-02-01', 'Moscow, North Warehouse', 'Moscow, Stroitely St. 15', 45),
-(1, 2, 3, '2025-02-01', 'Moscow, South Warehouse', 'Moscow, Lenina St. 20', 60),
-(2, 9, 5, '2025-02-02', 'Moscow, Furniture Factory', 'Moscow, Pushkina St. 10', 25),
-(3, 10, 7, '2025-02-03', 'SPb, North Warehouse', 'SPb, Entuziastov Ave. 50', 35),
-(4, 11, 9, '2025-02-04', 'Krasnodar, Warehouse', 'Krasnodar, Central Market', 15),
-(5, 3, 11, '2025-02-05', 'Moscow, Auto Warehouse', 'Moscow, South Service Station', 30),
-(6, 15, 13, '2025-02-06', 'Moscow, Company Office', 'Sheremetyevo Airport', 65),
-(7, 4, 15, '2025-02-07', 'Moscow, Metal Base', 'SPb, Construction Site', 750),
-(8, 5, 17, '2025-02-08', 'Moscow, Chemical Warehouse', 'Tver, Factory', 180),
-(9, 12, 19, '2025-02-09', 'Moscow, Center', 'Moscow, Kursky Railway Station', 12),
-(10, 6, 2, '2025-02-10', 'Moscow, Office 1', 'Moscow, Office 2', 20),
-(11, 7, 4, '2025-02-11', 'SPb, Port', 'SPb, Warehouse', 25),
-(12, 8, 6, '2025-02-12', 'Moscow, Warehouse', 'Mytishchi, Shopping Center', 35),
-(13, 13, 8, '2025-02-13', 'Krasnodar, Factory', 'Rostov-on-Don, Warehouse', 280),
-(14, 14, 10, '2025-02-14', 'SPb, Warehouse', 'Veliky Novgorod, Store', 190),
-(15, 16, 12, '2025-02-15', 'Moscow, Warehouse', 'Elektrostal, Factory', 70),
-(16, 17, 14, '2025-02-16', 'Moscow, Hotel', 'Vnukovo Airport', 55),
-(17, 18, 16, '2025-02-17', 'Moscow, Metal Base', 'Lyubertsy, Construction', 25),
-(18, 19, 18, '2025-02-18', 'Moscow, Chemical Warehouse', 'Klin, Factory', 95),
-(19, 20, 20, '2025-02-19', 'Moscow, Center', 'Moscow, South Port', 18),
-(20, 21, 1, '2025-02-20', 'Moscow, Office', 'Krasnogorsk, Warehouse', 30),
-(1, 22, 3, '2025-02-21', 'Moscow, Warehouse', 'Moscow, RIO Mall', 15),
-(2, 23, 5, '2025-02-22', 'SPb, Warehouse', 'Pushkin, Store', 30),
-(3, 24, 7, '2025-02-23', 'Krasnodar, Warehouse', 'Anapa, Resort Base', 180),
-(4, 25, 9, '2025-02-24', 'Moscow, Warehouse', 'Solnechnogorsk, Factory', 80),
-(5, 26, 11, '2025-02-25', 'Moscow, Auto Warehouse', 'Podolsk, Service Station', 55),
-(6, 27, 13, '2025-02-26', 'Moscow, Office', 'Odintsovo, Business Center', 25),
-(7, 28, 15, '2025-02-27', 'Moscow, Metal Base', 'Naro-Fominsk, Construction', 110),
-(8, 29, 17, '2025-02-28', 'Moscow, Chemical Warehouse', 'Serpukhov, Factory', 130),
-(9, 30, 19, '2025-03-01', 'Moscow, Center', 'Moscow, Paveletsky Railway Station', 10);
+-- 7. Users (сначала системные пользователи)
+INSERT INTO Users (Username, PasswordHash, TempPassword, RoleId, ClientId) VALUES 
+('admin', '03AC674216F3E15C761EE1A5E255F067953623C8B388B4459E13F978D7C846F4', 0, 1, NULL),
+('dispatcher1', '03AC674216F3E15C761EE1A5E255F067953623C8B388B4459E13F978D7C846F4', 0, 2, NULL),
+('dispatcher2', '03AC674216F3E15C761EE1A5E255F067953623C8B388B4459E13F978D7C846F4', 0, 2, NULL),
+('mechanic', '03AC674216F3E15C761EE1A5E255F067953623C8B388B4459E13F978D7C846F4', 0, 3, NULL),
+('manager', '03AC674216F3E15C761EE1A5E255F067953623C8B388B4459E13F978D7C846F4', 0, 4, NULL);
 
--- 7. Maintenance types
+-- 8. Orders (ТЕПЕРЬ заказы, используя существующие ServiceId)
+INSERT INTO Orders (ClientId, ServiceId, OrderDate, TripDate, RouteFrom, RouteTo, Distance, DurationMinutes, PassengerCount, TotalPrice, Status, PaymentStatus, Notes) VALUES
+(1, 2, '2025-02-01 10:00', '2025-02-01 14:00', 'Moscow, North Warehouse', 'Moscow, Stroitely St. 15', 45, 60, 2, 7250.00, 'completed', 'paid', 'Building materials delivery'),
+(2, 2, '2025-02-02 11:00', '2025-02-02 15:30', 'Moscow, Furniture Factory', 'Moscow, Pushkina St. 10', 25, 40, 2, 6250.00, 'completed', 'paid', 'Furniture transportation'),
+(5, 1, '2025-02-04 09:00', '2025-02-04 12:00', 'Krasnodar, Warehouse', 'Krasnodar, Central Market', 15, 25, 5, 3525.00, 'completed', 'paid', 'Food delivery');
+
+-- 9. Trips (ТЕПЕРЬ поездки, используя существующие OrderId)
+INSERT INTO Trips (OrderId, VehicleId, DriverId, ActualStartTime, ActualEndTime, ActualMileage, Status) VALUES
+(1, 1, 1, '2025-02-01 14:00', '2025-02-01 15:10', 48, 'completed'),
+(2, 9, 5, '2025-02-02 15:30', '2025-02-02 16:15', 27, 'completed'),
+(3, 11, 9, '2025-02-04 12:00', '2025-02-04 12:30', 16, 'completed');
+
+-- 10. Maintenance types
 INSERT INTO MaintenanceTypes (WorkType) VALUES 
 ('Oil change'),
 ('Brake pad replacement'),
@@ -265,7 +295,7 @@ INSERT INTO MaintenanceTypes (WorkType) VALUES
 ('Suspension repair'),
 ('Computer diagnostics');
 
--- 8. Maintenance log (30+ records)
+-- 11. Maintenance log
 INSERT INTO MaintenanceLog (VehicleId, MaintenanceDate, MaintenanceTypeId, Mileage, MechanicName, Notes) VALUES
 (1, '2024-01-15', 1, 45000, 'Sidorov A.V.', 'Shell oil, oil filter'),
 (1, '2024-05-20', 2, 52000, 'Kozlov D.N.', 'Front pads TRW'),
@@ -300,22 +330,6 @@ INSERT INTO MaintenanceLog (VehicleId, MaintenanceDate, MaintenanceTypeId, Milea
 (28, '2024-12-20', 9, 79000, 'Grigoriev O.V.', 'Silent blocks'),
 (29, '2024-07-25', 2, 94000, 'Andreev K.S.', 'Brake pads'),
 (30, '2024-08-05', 5, 112000, 'Fedorov D.V.', 'Alternator belt');
-
--- 9. Roles
-INSERT INTO Roles (RoleName) VALUES 
-('Administrator'),
-('Dispatcher'),
-('Mechanic'),
-('Manager');
-
--- 10. Users (username: name, password: 1234 - for example only)
--- In real project passwords must be hashed!
-INSERT INTO Users (Username, PasswordHash, RoleId) VALUES 
-('admin', '03AC674216F3E15C761EE1A5E255F067953623C8B388B4459E13F978D7C846F4', 1),
-('dispatcher1', '03AC674216F3E15C761EE1A5E255F067953623C8B388B4459E13F978D7C846F4', 2),
-('dispatcher2', '03AC674216F3E15C761EE1A5E255F067953623C8B388B4459E13F978D7C846F4', 2),
-('mechanic', '03AC674216F3E15C761EE1A5E255F067953623C8B388B4459E13F978D7C846F4', 3),
-('manager', '03AC674216F3E15C761EE1A5E255F067953623C8B388B4459E13F978D7C846F4', 4);
 GO
 
 -- Check record counts
@@ -323,9 +337,11 @@ SELECT 'Facilities' AS TableName, COUNT(*) AS Count FROM Facilities
 UNION ALL SELECT 'Vehicles', COUNT(*) FROM Vehicles
 UNION ALL SELECT 'Drivers', COUNT(*) FROM Drivers
 UNION ALL SELECT 'Clients', COUNT(*) FROM Clients
+UNION ALL SELECT 'Services', COUNT(*) FROM Services
 UNION ALL SELECT 'Orders', COUNT(*) FROM Orders
 UNION ALL SELECT 'Trips', COUNT(*) FROM Trips
 UNION ALL SELECT 'MaintenanceTypes', COUNT(*) FROM MaintenanceTypes
 UNION ALL SELECT 'MaintenanceLog', COUNT(*) FROM MaintenanceLog
+UNION ALL SELECT 'Roles', COUNT(*) FROM Roles
 UNION ALL SELECT 'Users', COUNT(*) FROM Users;
 GO

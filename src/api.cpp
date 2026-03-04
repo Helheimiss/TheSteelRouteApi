@@ -11,6 +11,7 @@ void api::User::login(const drogon::HttpRequestPtr &req, HttpResponseCallback &&
     query.prepare("SELECT Id, Username, PasswordHash, RoleId FROM Users "
                   "WHERE Username = ? AND PasswordHash = ?;");
 
+
     QString qLogin = login.c_str();
     QString qHashPassword = QCryptographicHash::hash(password, QCryptographicHash::Sha256).toHex().toUpper();
 
