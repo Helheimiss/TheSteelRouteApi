@@ -1,6 +1,6 @@
 #include <QCoreApplication>
 
-#include "drogon/drogon.h"
+#include "drogon/HttpAppFramework.h"
 
 #include "Database.hpp"
 
