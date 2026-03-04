@@ -1,0 +1,29 @@
+#pragma once
+
+#include <string>
+
+#include "User.hpp"
+#include "Data.hpp"
+
+namespace token {
+    inline std::string createToken(const User& usr) {
+        if (DATA::Tokens.contains(hash_value(usr))) {
+            return DATA::Tokens[hash_value(usr)];
+        }
+
+        auto token = jwt::create()
+            .set_type("JWT")
+            .set_subject(usr.Id)
+            .set_payload_claim("LastName", jwt::claim(usr.LastName))
+            .set_payload_claim("FirstName", jwt::claim(usr.FirstName))
+            .set_payload_claim("Email", jwt::claim(usr.Email))
+            .set_payload_claim("Phone", jwt::claim(usr.Phone))
+            .set_payload_claim("Login", jwt::claim(usr.Login))
+            .set_payload_claim("CreatedAt", jwt::claim(usr.CreatedAt))
+            .set_issued_at(std::chrono::system_clock::now())
+            .sign(jwt::algorithm::hs256{DATA::SECRET_KEY});
+
+        DATA::Tokens.insert(hash_value(usr), token);
+        return token;
+    }
+}
