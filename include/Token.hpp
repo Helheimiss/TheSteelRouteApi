@@ -26,4 +26,21 @@ namespace token {
         DATA::Tokens.insert(hash_value(usr), token);
         return token;
     }
+
+    inline bool verifyToken(const std::string& token) {
+        try {
+            auto decoded = jwt::decode(token);
+
+
+            auto verifier = jwt::verify()
+                .allow_algorithm(jwt::algorithm::hs256{DATA::SECRET_KEY});
+
+            verifier.verify(decoded);
+
+
+            return true;
+        } catch (...) {
+            return false;
+        }
+    }
 }
