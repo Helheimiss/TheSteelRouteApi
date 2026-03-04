@@ -15,11 +15,12 @@ namespace TheSteelRouteApi {
 
         [[nodiscard]] QString getLastError() const;
 
-        bool openDatabase();
-        void closeDatabase();
-
         QSqlDatabase &getDatabase();
     protected:
         QSqlDatabase db;
+
+    private:
+        bool openDatabase();
+        void closeDatabase();
     };
 }

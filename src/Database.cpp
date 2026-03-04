@@ -11,6 +11,8 @@ TheSteelRouteApi::Database::Database() {
         "TrustServerCertificate=yes;";
 
     db.setDatabaseName(connectionString);
+    if (!openDatabase())
+        throw std::runtime_error(getLastError().toStdString());
 }
 
 TheSteelRouteApi::Database::~Database() {
