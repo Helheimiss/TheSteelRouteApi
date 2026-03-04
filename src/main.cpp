@@ -1,3 +1,8 @@
-//
-// Created by helh on 3/4/2026.
-//
+#include <QCoreApplication>
+
+
+int main(int argc, char *argv[]) {
+    QCoreApplication app(argc, argv);
+
+    return app.exec();
+}

@@ -18,5 +18,9 @@ add_subdirectory(libs/drogon)
 add_subdirectory(libs/jwt-cpp)
 
 
-add_executable(${PROJECT_NAME} src/main.cpp)
+add_executable(${PROJECT_NAME}
+        src/main.cpp
+        src/Database.cpp
+)
+target_include_directories(${PROJECT_NAME} PRIVATE include)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Sql drogon jwt-cpp::jwt-cpp)
