@@ -8,8 +8,8 @@ void api::User::login(const drogon::HttpRequestPtr &req, HttpResponseCallback &&
     auto resp = drogon::HttpResponse::newHttpResponse(drogon::HttpStatusCode::k200OK, drogon::ContentType::CT_TEXT_PLAIN);
 
     auto query = DATA::DataBase.sqlQuery();
-    query.prepare("SELECT Id, Username, PasswordHash, RoleId FROM Users "
-                  "WHERE Username = ? AND PasswordHash = ?;");
+    query.prepare("SELECT Id, LastName, FirstName, Email, Phone, Login, PasswordHash, CreatedAt FROM Users "
+                  "WHERE Login = ? AND PasswordHash = ?;");
 
 
     QString qLogin = login.c_str();
@@ -20,10 +20,17 @@ void api::User::login(const drogon::HttpRequestPtr &req, HttpResponseCallback &&
 
 
     if (query.exec() && query.next()) {
-        int id = query.value(0).toInt();
-        int roleId = query.value(3).toInt();
+        DATA::User usr(
+        query.value(0).toString().toStdString(),
+        query.value(1).toString().toStdString(),
+        query.value(2).toString().toStdString(),
+        query.value(3).toString().toStdString(),
+        query.value(4).toString().toStdString(),
+        query.value(5).toString().toStdString(),
+        query.value(6).toString().toStdString(),
+        query.value(7).toString().toStdString());
 
-        resp->setBody(DATA::createToken(id, login, roleId));
+        resp->setBody(DATA::createToken(usr));
     }
     else {
         resp->setStatusCode(drogon::HttpStatusCode::k404NotFound);
