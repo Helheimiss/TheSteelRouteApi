@@ -5,7 +5,7 @@
 #include "User.hpp"
 #include "Data.hpp"
 
-namespace token {
+namespace Token {
     inline std::string createToken(const User& usr) {
         if (DATA::Tokens.contains(hash_value(usr))) {
             return DATA::Tokens[hash_value(usr)];
@@ -32,14 +32,12 @@ namespace token {
         try {
             auto decoded = jwt::decode(token);
 
-
             auto verifier = jwt::verify()
                 .allow_algorithm(jwt::algorithm::hs256{DATA::SECRET_KEY});
 
             verifier.verify(decoded);
 
-
-            return true;
+            return DATA::Tokens.values().contains(token);
         } catch (...) {
             return false;
         }

@@ -13,7 +13,7 @@ void api::user::login(const drogon::HttpRequestPtr &req, HttpResponseCallback &&
     auto usr = User::findUser(login, password);
 
     if (usr) {
-        resp->setBody(token::createToken(*usr));
+        resp->setBody(Token::createToken(*usr));
     }
     else {
         resp->setStatusCode(drogon::HttpStatusCode::k404NotFound);
@@ -24,11 +24,16 @@ void api::user::login(const drogon::HttpRequestPtr &req, HttpResponseCallback &&
     callback(resp);
 }
 
-void api::user::getAll(const drogon::HttpRequestPtr &req, HttpResponseCallback &&callback) const {
+void api::user::getAll(const drogon::HttpRequestPtr &req, HttpResponseCallback &&callback, std::string &&token) const {
     Json::Value usersJson;
-    // TODO() valid token
 
-
+    if (!Token::verifyToken(token)) {
+        auto resp = drogon::HttpResponse::newHttpJsonResponse(usersJson);
+        resp->setStatusCode(drogon::HttpStatusCode::k401Unauthorized);
+        callback(resp);
+        return;
+    }
+    
     auto users = User::getAllUsers();
     usersJson["count"] = static_cast<int>(users.size());
     usersJson["users"] = Json::arrayValue;
@@ -44,8 +49,7 @@ void api::user::getAll(const drogon::HttpRequestPtr &req, HttpResponseCallback &
         userJson["PasswordHash"] = user.PasswordHash;
         userJson["Role"] = user.Role;
         userJson["CreatedAt"] = user.CreatedAt;
-
-        usersJson["users"].append(userJson);  // Добавляем userJson в массив
+        usersJson["users"].append(userJson);
     }
 
 
