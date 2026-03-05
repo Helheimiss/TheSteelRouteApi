@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 4.1)
 project(TheSteelRouteApi VERSION 0.1.0)
 
 if (WIN32)
-    set(CMAKE_PREFIX_PATH "C:/msys64/mingw64${CMAKE_PREFIX_PATH}")
+    set(CMAKE_PREFIX_PATH "C:/msys64/mingw64;${CMAKE_PREFIX_PATH}")
 endif ()
 
 set(CMAKE_CXX_STANDARD 20)

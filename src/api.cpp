@@ -42,6 +42,7 @@ void api::user::getAll(const drogon::HttpRequestPtr &req, HttpResponseCallback &
         userJson["Phone"] = user.Phone;
         userJson["Login"] = user.Login;
         userJson["PasswordHash"] = user.PasswordHash;
+        userJson["Role"] = user.Role;
         userJson["CreatedAt"] = user.CreatedAt;
 
         usersJson["users"].append(userJson);  // Добавляем userJson в массив

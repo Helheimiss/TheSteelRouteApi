@@ -19,6 +19,7 @@ namespace token {
             .set_payload_claim("Email", jwt::claim(usr.Email))
             .set_payload_claim("Phone", jwt::claim(usr.Phone))
             .set_payload_claim("Login", jwt::claim(usr.Login))
+            .set_payload_claim("Role", jwt::claim(usr.Role))
             .set_payload_claim("CreatedAt", jwt::claim(usr.CreatedAt))
             .set_issued_at(std::chrono::system_clock::now())
             .sign(jwt::algorithm::hs256{DATA::SECRET_KEY});

@@ -7,13 +7,21 @@ TheSteelRouteApi::Database::~Database() {
 
 void TheSteelRouteApi::Database::init() {
     db = QSqlDatabase::addDatabase("QODBC");
+    // QString connectionString =
+    //     "DRIVER={ODBC Driver 18 for SQL Server};"
+    //     "SERVER=localhost;"
+    //     "DATABASE=TheSteelRouteDBv3;"
+    //     "UID=sa;"
+    //     "PWD=TempPa55wd;"
+    //     "TrustServerCertificate=yes;";
+
     QString connectionString =
         "DRIVER={ODBC Driver 18 for SQL Server};"
-        "SERVER=localhost;"
-        "DATABASE=TheSteelRouteDBv2;"
-        "UID=sa;"
-        "PWD=TempPa55wd;"
-        "TrustServerCertificate=yes;";
+        "SERVER=localhost\\SQLEXPRESS;"
+        "DATABASE=TheSteelRouteDBv3;"
+        "Trusted_Connection=Yes;"
+        "Encrypt=Yes;"
+        "TrustServerCertificate=Yes;";
 
     db.setDatabaseName(connectionString);
     if (!db.open())
