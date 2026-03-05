@@ -23,6 +23,7 @@ public:
 };
 
 
+// TODO() REWORK
 class orders : public drogon::HttpController<orders> {
 public:
     METHOD_LIST_BEGIN
@@ -42,7 +43,7 @@ class payments : public drogon::HttpController<payments> {
 public:
 };
 
-
+// TODO() REWORK
 class user : public drogon::HttpController<user> {
 public:
     METHOD_LIST_BEGIN

@@ -1,5 +1,5 @@
 ### GET request to example server
-GET 127.0.0.1/api/user/public/login/admin/13234
+POST 127.0.0.1/api/user/public/login2
 Content-Type: application/json
 
 {
@@ -7,3 +7,4 @@ Content-Type: application/json
   "password": "1234"
 }
 ###
+GET 127.0.0.1/api/user/public/login/admin/13234
