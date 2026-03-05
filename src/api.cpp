@@ -99,34 +99,35 @@ void api::orders::getAll(const drogon::HttpRequestPtr &req, HttpResponseCallback
 }
 
 void api::user::login(const drogon::HttpRequestPtr &req, HttpResponseCallback &&callback, std::string &&login, std::string &&password) const {
-    auto resp = drogon::HttpResponse::newHttpResponse(drogon::HttpStatusCode::k200OK, drogon::ContentType::CT_TEXT_PLAIN);
 
     if (const auto usr = User::findUser(login, password)) {
+        auto resp = drogon::HttpResponse::newHttpResponse(drogon::HttpStatusCode::k200OK, drogon::ContentType::CT_TEXT_PLAIN);
         resp->setBody(Token::createToken(*usr));
-    }
-    else {
-        resp->setStatusCode(drogon::HttpStatusCode::k404NotFound);
-        resp->setBody("invalid login or password");
+        callback(resp);
+        return;
     }
 
+    auto resp = Utils::makeErrorJson("invalid login or password");
+    resp->setStatusCode(drogon::HttpStatusCode::k404NotFound);
 
     callback(resp);
 }
 
 void api::user::getAll(const drogon::HttpRequestPtr &req, HttpResponseCallback &&callback, std::string &&token) const {
+    if (!Token::verifyToken(token)) {
+        auto resp = Utils::makeErrorJson("bad token");
+        resp->setStatusCode(drogon::HttpStatusCode::k401Unauthorized);
+        callback(resp);
+        return;
+    }
+
+
     auto decoded = jwt::decode(token);
     auto role = decoded.get_payload_claim("Role").as_string();
 
     if (role != "Admin") {
         auto resp = Utils::makeErrorJson("not allowed");
-        resp->setStatusCode(drogon::HttpStatusCode::k403Forbidden);
-        callback(resp);
-        return;
-    }
-
-    if (!Token::verifyToken(token)) {
-        auto resp = Utils::makeErrorJson("bad token");
-        resp->setStatusCode(drogon::HttpStatusCode::k401Unauthorized);
+        resp->setStatusCode(drogon::HttpStatusCode::k405MethodNotAllowed);
         callback(resp);
         return;
     }
