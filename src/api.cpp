@@ -7,48 +7,45 @@
 
 #include <QDateTime>
 
+#include "Order.hpp"
+
 void api::orders::create(const drogon::HttpRequestPtr &req, HttpResponseCallback &&callback,
                          std::string &&FromAddress, std::string &&ToAddress, int TravelTimeMinutes, double DistanceKm,
                          std::string &&TravelDate, std::string &&TravelTime, int PassengerCount, std::string &&token) const {
-
     if (!Token::verifyToken(token)) {
         auto resp = drogon::HttpResponse::newHttpJsonResponse(Json::Value());
         resp->setStatusCode(drogon::HttpStatusCode::k401Unauthorized);
         callback(resp);
         return;
     }
+
+
+    Order order;
+    auto decode = jwt::decode(token);
+    int id = stoi(decode.get_subject());
+
+    order.Id = id;
+    order.FromAddress = FromAddress;
+    order.ToAddress = ToAddress;
+    order.TravelTimeMinutes = TravelTimeMinutes;
+    order.DistanceKm = DistanceKm;
+    order.TravelDate = TravelDate;
+    order.TravelTime = TravelTime;
+    order.PassengerCount = PassengerCount;
+
+    auto strOptional = Order::createOrderForUserId(id, order);
+    if (strOptional) {
+        Json::Value error;
+        error["error"] = *strOptional;
+        auto resp = drogon::HttpResponse::newHttpJsonResponse(error);
+        resp->setStatusCode(drogon::HttpStatusCode::k400BadRequest);
+        callback(resp);
+        return;
+    }
+
+
     Json::Value result;
     result["status"] = "Pending confirmation";
-
-    auto query = DATA::DataBase.sqlQuery();
-    query.prepare("INSERT INTO Orders (UserId, FromAddress, ToAddress, TravelTimeMinutes, DistanceKm, TravelDate, TravelTime, PassengerCount, Status) "
-                  "VALUES "
-                  "(?, ?, ?, ?, ?, ?, ?, ?, 'Pending confirmation')");
-
-    auto decode = jwt::decode(token);
-
-
-    auto qUserId = stoi(decode.get_subject());
-    auto qFromAddress = QString::fromStdString(FromAddress);
-    auto qToAddress = QString::fromStdString(ToAddress);
-    auto qTravelTimeMinutes = TravelTimeMinutes;
-    auto qDistanceKm = DistanceKm;
-    auto qTravelDate = QString::fromStdString(TravelDate);
-    auto qTravelTime = QString::fromStdString(TravelTime);
-    auto qPassengerCount = PassengerCount;
-
-
-    query.bindValue(0, qUserId);
-    query.bindValue(1, qFromAddress);
-    query.bindValue(2, qToAddress);
-    query.bindValue(3, qTravelTimeMinutes);
-    query.bindValue(4, qDistanceKm);
-    query.bindValue(5, qTravelDate);
-    query.bindValue(6, qTravelTime);
-    query.bindValue(7, qPassengerCount);
-
-    auto re = query.exec();
-    if (!re) throw std::runtime_error(query.lastError().text().toStdString());
 
     auto resp = drogon::HttpResponse::newHttpJsonResponse(result);
     callback(resp);
@@ -56,48 +53,52 @@ void api::orders::create(const drogon::HttpRequestPtr &req, HttpResponseCallback
 
 void api::orders::getAll(const drogon::HttpRequestPtr &req, HttpResponseCallback &&callback,
     std::string &&token) const {
-    Json::Value ordersJson;
-
-    auto decoded = jwt::decode(token);
-
     if (!Token::verifyToken(token)) {
-        auto resp = drogon::HttpResponse::newHttpJsonResponse(ordersJson);
+        auto resp = drogon::HttpResponse::newHttpJsonResponse(Json::Value());
         resp->setStatusCode(drogon::HttpStatusCode::k401Unauthorized);
         callback(resp);
         return;
     }
 
+    auto decoded = jwt::decode(token);
     auto Id = stoi(decoded.get_subject());
-    auto query = DATA::DataBase.sqlQuery();
 
-    query.prepare("SELECT Id ,UserId ,FromAddress ,ToAddress ,TravelTimeMinutes ,DistanceKm ,TravelDate ,TravelTime ,PassengerCount ,Status ,BusId ,DriverId, CreatedAt "
-                  "FROM Orders WHERE UserId = ?;");
-    query.bindValue(0, Id);
+    auto ordersVariant = Order::getAllOrderByUserId(Id);
 
-    if (!query.exec())
-        throw std::runtime_error(query.lastError().text().toStdString());
+    if (std::holds_alternative<std::string>(ordersVariant)) {
+        Json::Value error;
+        error["error"] = std::get<std::string>(ordersVariant);
 
-    ordersJson["count"] = query.numRowsAffected();
+        auto resp = drogon::HttpResponse::newHttpJsonResponse(error);
+        resp->setStatusCode(drogon::HttpStatusCode::k400BadRequest);
+        callback(resp);
+        return;
+    }
+
+    auto orders = std::get<std::vector<Order>>(ordersVariant);
+    Json::Value ordersJson;
+    ordersJson["count"] = orders.size();
     ordersJson["orders"] = Json::arrayValue;
 
-    while (query.next()) {
+    for (const auto & order : orders) {
         Json::Value orderJson;
-        orderJson["Id"] = query.value(0).toString().toStdString();
-        orderJson["UserId"] = query.value(1).toString().toStdString();
-        orderJson["FromAddress"] = query.value(2).toString().toStdString();
-        orderJson["ToAddress"] = query.value(3).toString().toStdString();
-        orderJson["TravelTimeMinutes"] = query.value(4).toString().toStdString();
-        orderJson["DistanceKm"] = query.value(5).toString().toStdString();
-        orderJson["TravelDate"] = query.value(6).toString().toStdString();
-        orderJson["TravelTime"] = query.value(7).toString().toStdString();
-        orderJson["PassengerCount"] = query.value(8).toString().toStdString();
-        orderJson["Status"] = query.value(9).toString().toStdString();
-        orderJson["BusId"] = query.value(10).toString().toStdString();
-        orderJson["DriverId"] = query.value(11).toString().toStdString();
-        orderJson["CreatedAt"] = query.value(12).toString().toStdString();
+        orderJson["Id"] = order.Id;
+        orderJson["UserId"] = order.UserId;
+        orderJson["FromAddress"] = order.FromAddress;
+        orderJson["ToAddress"] = order.ToAddress;
+        orderJson["TravelTimeMinutes"] = order.TravelTimeMinutes;
+        orderJson["DistanceKm"] = order.DistanceKm;
+        orderJson["TravelDate"] = order.TravelDate;
+        orderJson["TravelTime"] = order.TravelTime;
+        orderJson["PassengerCount"] = order.PassengerCount;
+        orderJson["Status"] = order.Status;
+        orderJson["BusId"] = order.BusId;
+        orderJson["DriverId"] = order.DriverId;
+        orderJson["CreatedAt"] = order.CreatedAt;
 
         ordersJson["orders"].append(orderJson);
     }
+
 
     auto resp = drogon::HttpResponse::newHttpJsonResponse(ordersJson);
     callback(resp);
@@ -106,9 +107,7 @@ void api::orders::getAll(const drogon::HttpRequestPtr &req, HttpResponseCallback
 void api::user::login(const drogon::HttpRequestPtr &req, HttpResponseCallback &&callback, std::string &&login, std::string &&password) const {
     auto resp = drogon::HttpResponse::newHttpResponse(drogon::HttpStatusCode::k200OK, drogon::ContentType::CT_TEXT_PLAIN);
 
-    auto usr = User::findUser(login, password);
-
-    if (usr) {
+    if (const auto usr = User::findUser(login, password)) {
         resp->setBody(Token::createToken(*usr));
     }
     else {
@@ -121,26 +120,36 @@ void api::user::login(const drogon::HttpRequestPtr &req, HttpResponseCallback &&
 }
 
 void api::user::getAll(const drogon::HttpRequestPtr &req, HttpResponseCallback &&callback, std::string &&token) const {
-    Json::Value usersJson;
-
     auto decoded = jwt::decode(token);
     auto role = decoded.get_payload_claim("Role").as_string();
 
     if (role != "Admin") {
-        auto resp = drogon::HttpResponse::newHttpJsonResponse(usersJson);
+        auto resp = drogon::HttpResponse::newHttpJsonResponse(Json::Value());
         resp->setStatusCode(drogon::HttpStatusCode::k403Forbidden);
         callback(resp);
         return;
     }
 
     if (!Token::verifyToken(token)) {
-        auto resp = drogon::HttpResponse::newHttpJsonResponse(usersJson);
+        auto resp = drogon::HttpResponse::newHttpJsonResponse(Json::Value());
         resp->setStatusCode(drogon::HttpStatusCode::k401Unauthorized);
         callback(resp);
         return;
     }
 
-    auto users = User::getAllUsers();
+
+    auto usersVariant = User::getAllUsers();
+    if (std::holds_alternative<std::string>(usersVariant)) {
+        Json::Value error;
+        error["error"] = std::get<std::string>(usersVariant);
+        auto resp = drogon::HttpResponse::newHttpJsonResponse(error);
+        resp->setStatusCode(drogon::HttpStatusCode::k400BadRequest);
+        callback(resp);
+        return;
+    }
+
+    auto users = std::get<std::vector<User>>(usersVariant);
+    Json::Value usersJson;
     usersJson["count"] = static_cast<int>(users.size());
     usersJson["users"] = Json::arrayValue;
 

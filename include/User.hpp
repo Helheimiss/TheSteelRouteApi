@@ -21,7 +21,7 @@ public:
           CreatedAt(created_at) {
     }
 
-    static std::optional<User> findUser(std::string login, std::string password) {
+    static std::optional<User> findUser(const std::string &login, const std::string &password) {
         auto query = DATA::DataBase.sqlQuery();
         query.prepare("SELECT Id, LastName, FirstName, Email, Phone, Login, PasswordHash, Role, CreatedAt FROM Users "
                       "WHERE Login = ? AND PasswordHash = ?;");
@@ -35,7 +35,7 @@ public:
 
 
         if (query.exec() && query.next()) {
-            User usr(
+            return User(
             query.value(0).toString().toStdString(),
             query.value(1).toString().toStdString(),
             query.value(2).toString().toStdString(),
@@ -45,20 +45,19 @@ public:
             query.value(6).toString().toStdString(),
             query.value(7).toString().toStdString(),
             query.value(8).toString().toStdString());
-            return usr;
         }
 
         return std::nullopt;
     }
 
-    static std::vector<User> getAllUsers() {
+    static std::variant<std::string, std::vector<User>> getAllUsers() {
         std::vector<User> users;
 
         auto query = DATA::DataBase.sqlQuery();
         query.prepare("SELECT Id, LastName, FirstName, Email, Phone, Login, PasswordHash, Role, CreatedAt FROM Users;");
 
         if (!query.exec())
-            return users;
+            return query.lastError().text().toStdString();
 
         users.reserve(query.numRowsAffected());
 
