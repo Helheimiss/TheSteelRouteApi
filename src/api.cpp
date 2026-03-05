@@ -5,8 +5,6 @@
 #include "Token.hpp"
 #include "User.hpp"
 
-#include <QDateTime>
-
 #include "Order.hpp"
 
 void api::orders::create(const drogon::HttpRequestPtr &req, HttpResponseCallback &&callback,
@@ -33,10 +31,10 @@ void api::orders::create(const drogon::HttpRequestPtr &req, HttpResponseCallback
     order.TravelTime = TravelTime;
     order.PassengerCount = PassengerCount;
 
-    auto strOptional = Order::createOrderForUserId(id, order);
-    if (strOptional) {
+    auto errorOptional = Order::createOrderForUserId(id, order);
+    if (errorOptional) {
         Json::Value error;
-        error["error"] = *strOptional;
+        error["error"] = *errorOptional;
         auto resp = drogon::HttpResponse::newHttpJsonResponse(error);
         resp->setStatusCode(drogon::HttpStatusCode::k400BadRequest);
         callback(resp);
