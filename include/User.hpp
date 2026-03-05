@@ -7,9 +7,9 @@
 
 class User {
 public:
-    User(const std::string &id, const std::string &last_name, const std::string &first_name,
-        const std::string &email, const std::string &phone, const std::string &login,
-        const std::string &password_hash, const std::string &created_at)
+    User(const std::string &id, const std::string &last_name, const std::string &first_name, const std::string &email,
+        const std::string &phone, const std::string &login, const std::string &password_hash, const std::string &role,
+        const std::string &created_at)
         : Id(id),
           LastName(last_name),
           FirstName(first_name),
@@ -17,12 +17,13 @@ public:
           Phone(phone),
           Login(login),
           PasswordHash(password_hash),
+          Role(role),
           CreatedAt(created_at) {
     }
 
     static std::optional<User> findUser(std::string login, std::string password) {
         auto query = DATA::DataBase.sqlQuery();
-        query.prepare("SELECT Id, LastName, FirstName, Email, Phone, Login, PasswordHash, CreatedAt FROM Users "
+        query.prepare("SELECT Id, LastName, FirstName, Email, Phone, Login, PasswordHash, Role, CreatedAt FROM Users "
                       "WHERE Login = ? AND PasswordHash = ?;");
 
 
@@ -42,7 +43,8 @@ public:
             query.value(4).toString().toStdString(),
             query.value(5).toString().toStdString(),
             query.value(6).toString().toStdString(),
-            query.value(7).toString().toStdString());
+            query.value(7).toString().toStdString(),
+            query.value(8).toString().toStdString());
             return usr;
         }
 
@@ -53,7 +55,7 @@ public:
         std::vector<User> users;
 
         auto query = DATA::DataBase.sqlQuery();
-        query.prepare("SELECT Id, LastName, FirstName, Email, Phone, Login, PasswordHash, CreatedAt FROM Users;");
+        query.prepare("SELECT Id, LastName, FirstName, Email, Phone, Login, PasswordHash, Role, CreatedAt FROM Users;");
 
         if (!query.exec())
             return users;
@@ -61,7 +63,7 @@ public:
         users.reserve(query.numRowsAffected());
 
         while (query.next()) {
-            users.emplace_back(User(
+            users.emplace_back(
             query.value(0).toString().toStdString(),
             query.value(1).toString().toStdString(),
             query.value(2).toString().toStdString(),
@@ -69,7 +71,8 @@ public:
             query.value(4).toString().toStdString(),
             query.value(5).toString().toStdString(),
             query.value(6).toString().toStdString(),
-            query.value(7).toString().toStdString())
+            query.value(7).toString().toStdString(),
+            query.value(8).toString().toStdString()
             );
 
         }
@@ -100,5 +103,6 @@ public:
     std::string Phone;
     std::string Login;
     std::string PasswordHash;
+    std::string Role;
     std::string CreatedAt;
 };
