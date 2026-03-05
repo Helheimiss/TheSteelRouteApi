@@ -22,7 +22,7 @@ public:
     }
 
     static std::optional<User> findUser(const std::string &login, const std::string &password) {
-        auto query = DATA::DataBase.sqlQuery();
+        auto query = Data::DataBase.sqlQuery();
         query.prepare("SELECT Id, LastName, FirstName, Email, Phone, Login, PasswordHash, Role, CreatedAt FROM Users "
                       "WHERE Login = ? AND PasswordHash = ?;");
 
@@ -53,7 +53,7 @@ public:
     static std::variant<std::string, std::vector<User>> getAllUsers() {
         std::vector<User> users;
 
-        auto query = DATA::DataBase.sqlQuery();
+        auto query = Data::DataBase.sqlQuery();
         query.prepare("SELECT Id, LastName, FirstName, Email, Phone, Login, PasswordHash, Role, CreatedAt FROM Users;");
 
         if (!query.exec())

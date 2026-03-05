@@ -30,7 +30,7 @@ public:
     Order() = default;
 
     static std::optional<std::string> createOrderForUserId(int id, const Order &order) {
-        auto query = DATA::DataBase.sqlQuery();
+        auto query = Data::DataBase.sqlQuery();
         query.prepare("INSERT INTO Orders (UserId, FromAddress, ToAddress, TravelTimeMinutes, DistanceKm, TravelDate, TravelTime, PassengerCount, Status) "
                       "VALUES "
                       "(?, ?, ?, ?, ?, ?, ?, ?, 'Pending confirmation')");
@@ -63,8 +63,8 @@ public:
         return std::nullopt;
     };
 
-    static  std::variant<std::string, std::vector<Order>> getAllOrderByUserId(int id) {
-        auto query = DATA::DataBase.sqlQuery();
+    static std::variant<std::string, std::vector<Order>> getAllOrderByUserId(int id) {
+        auto query = Data::DataBase.sqlQuery();
         query.prepare("SELECT Id ,UserId ,FromAddress ,ToAddress ,TravelTimeMinutes ,DistanceKm ,TravelDate ,TravelTime ,PassengerCount ,Status ,BusId ,DriverId, CreatedAt "
                       "FROM Orders WHERE UserId = ?;");
         query.bindValue(0, id);

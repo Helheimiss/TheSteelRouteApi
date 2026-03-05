@@ -6,12 +6,13 @@
 #include "User.hpp"
 
 #include "Order.hpp"
+#include "Utils.hpp"
 
 void api::orders::create(const drogon::HttpRequestPtr &req, HttpResponseCallback &&callback,
                          std::string &&FromAddress, std::string &&ToAddress, int TravelTimeMinutes, double DistanceKm,
                          std::string &&TravelDate, std::string &&TravelTime, int PassengerCount, std::string &&token) const {
     if (!Token::verifyToken(token)) {
-        auto resp = drogon::HttpResponse::newHttpJsonResponse(Json::Value());
+        auto resp = Utils::makeErrorJson("bad token");
         resp->setStatusCode(drogon::HttpStatusCode::k401Unauthorized);
         callback(resp);
         return;
@@ -33,9 +34,7 @@ void api::orders::create(const drogon::HttpRequestPtr &req, HttpResponseCallback
 
     auto errorOptional = Order::createOrderForUserId(id, order);
     if (errorOptional) {
-        Json::Value error;
-        error["error"] = *errorOptional;
-        auto resp = drogon::HttpResponse::newHttpJsonResponse(error);
+        auto resp = Utils::makeErrorJson(*errorOptional);
         resp->setStatusCode(drogon::HttpStatusCode::k400BadRequest);
         callback(resp);
         return;
@@ -52,7 +51,7 @@ void api::orders::create(const drogon::HttpRequestPtr &req, HttpResponseCallback
 void api::orders::getAll(const drogon::HttpRequestPtr &req, HttpResponseCallback &&callback,
     std::string &&token) const {
     if (!Token::verifyToken(token)) {
-        auto resp = drogon::HttpResponse::newHttpJsonResponse(Json::Value());
+        auto resp = Utils::makeErrorJson("bad token");
         resp->setStatusCode(drogon::HttpStatusCode::k401Unauthorized);
         callback(resp);
         return;
@@ -64,10 +63,7 @@ void api::orders::getAll(const drogon::HttpRequestPtr &req, HttpResponseCallback
     auto ordersVariant = Order::getAllOrderByUserId(Id);
 
     if (std::holds_alternative<std::string>(ordersVariant)) {
-        Json::Value error;
-        error["error"] = std::get<std::string>(ordersVariant);
-
-        auto resp = drogon::HttpResponse::newHttpJsonResponse(error);
+        auto resp = Utils::makeErrorJson(std::get<std::string>(ordersVariant));
         resp->setStatusCode(drogon::HttpStatusCode::k400BadRequest);
         callback(resp);
         return;
@@ -122,14 +118,14 @@ void api::user::getAll(const drogon::HttpRequestPtr &req, HttpResponseCallback &
     auto role = decoded.get_payload_claim("Role").as_string();
 
     if (role != "Admin") {
-        auto resp = drogon::HttpResponse::newHttpJsonResponse(Json::Value());
+        auto resp = Utils::makeErrorJson("not allowed");
         resp->setStatusCode(drogon::HttpStatusCode::k403Forbidden);
         callback(resp);
         return;
     }
 
     if (!Token::verifyToken(token)) {
-        auto resp = drogon::HttpResponse::newHttpJsonResponse(Json::Value());
+        auto resp = Utils::makeErrorJson("bad token");
         resp->setStatusCode(drogon::HttpStatusCode::k401Unauthorized);
         callback(resp);
         return;
@@ -138,9 +134,7 @@ void api::user::getAll(const drogon::HttpRequestPtr &req, HttpResponseCallback &
 
     auto usersVariant = User::getAllUsers();
     if (std::holds_alternative<std::string>(usersVariant)) {
-        Json::Value error;
-        error["error"] = std::get<std::string>(usersVariant);
-        auto resp = drogon::HttpResponse::newHttpJsonResponse(error);
+        auto resp = Utils::makeErrorJson(std::get<std::string>(usersVariant));
         resp->setStatusCode(drogon::HttpStatusCode::k400BadRequest);
         callback(resp);
         return;

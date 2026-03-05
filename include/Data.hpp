@@ -6,7 +6,7 @@
 #include "jwt-cpp/jwt.h"
 
 
-namespace DATA {
+namespace Data {
     inline TheSteelRouteApi::Database DataBase;
 
     inline const std::string SECRET_KEY = "secret";

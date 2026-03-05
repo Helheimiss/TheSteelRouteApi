@@ -1,0 +1,9 @@
+### GET request to example server
+GET 127.0.0.1/api/user/public/login/admin/1234
+Content-Type: application/json
+
+{
+  "login": "admin",
+  "password": "1234"
+}
+###

@@ -7,7 +7,7 @@
 
 int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
-    DATA::DataBase.init();
+    Data::DataBase.init();
 
     drogon::app()
         .enableServerHeader(false)
