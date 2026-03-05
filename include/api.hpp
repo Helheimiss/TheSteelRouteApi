@@ -26,10 +26,12 @@ public:
 class orders : public drogon::HttpController<orders> {
 public:
     METHOD_LIST_BEGIN
-    METHOD_ADD(orders::create, "/private/create/{FromAddress}/{ToAddress}/{TravelTimeMinutes}/{DistanceKm}/{TravelDate}/{PassengerCount}/{token}", drogon::Get);
+    METHOD_ADD(orders::create, "/private/create/{FromAddress}/{ToAddress}/{TravelTimeMinutes}/{DistanceKm}/{TravelDate}/{TravelTime}/{PassengerCount}/{token}", drogon::Get);
+    // /FromAddress/ToAddress/41/21.9/2026-03-10/10:00/30
     METHOD_LIST_END
 
-    void create(const drogon::HttpRequestPtr &req, HttpResponseCallback &&callback, std::string &&login, std::string &&FromAddress, std::string &&ToAddress, int TravelTimeMinutes, double DistanceKm, std::string &&TravelDate, int PassengerCount, std::string &&token) const;
+    void create(const drogon::HttpRequestPtr &req, HttpResponseCallback &&callback, std::string &&FromAddress, std::string &&ToAddress, int TravelTimeMinutes, double DistanceKm, std::string &&TravelDate, std
+                ::string &&TravelTime, int PassengerCount, std::string &&token) const;
 };
 
 
