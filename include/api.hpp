@@ -6,27 +6,35 @@ using HttpResponseCallback = std::function<void(const drogon::HttpResponsePtr &)
 
 namespace api {
 class buses : public drogon::HttpController<buses> {
+public:
 
 };
 
 
 class drivers : public drogon::HttpController<drivers> {
+public:
 
 };
 
 
 class expenses : public drogon::HttpController<expenses> {
+public:
 
 };
 
 
 class orders : public drogon::HttpController<orders> {
+public:
+    METHOD_LIST_BEGIN
+    METHOD_ADD(orders::create, "/private/create/{FromAddress}/{ToAddress}/{TravelTimeMinutes}/{DistanceKm}/{TravelDate}/{PassengerCount}/{token}", drogon::Get);
+    METHOD_LIST_END
 
+    void create(const drogon::HttpRequestPtr &req, HttpResponseCallback &&callback, std::string &&login, std::string &&FromAddress, std::string &&ToAddress, int TravelTimeMinutes, double DistanceKm, std::string &&TravelDate, int PassengerCount, std::string &&token) const;
 };
 
 
 class payments : public drogon::HttpController<payments> {
-
+public:
 };
 
 
