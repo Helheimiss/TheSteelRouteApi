@@ -27,13 +27,24 @@ void api::user::login(const drogon::HttpRequestPtr &req, HttpResponseCallback &&
 void api::user::getAll(const drogon::HttpRequestPtr &req, HttpResponseCallback &&callback, std::string &&token) const {
     Json::Value usersJson;
 
+    auto decoded = jwt::decode(token);
+    auto role = decoded.get_payload_claim("Role").as_string();
+
+
     if (!Token::verifyToken(token)) {
         auto resp = drogon::HttpResponse::newHttpJsonResponse(usersJson);
         resp->setStatusCode(drogon::HttpStatusCode::k401Unauthorized);
         callback(resp);
         return;
     }
-    
+
+    if (role != "Admin") {
+        auto resp = drogon::HttpResponse::newHttpJsonResponse(usersJson);
+        resp->setStatusCode(drogon::HttpStatusCode::k403Forbidden);
+        callback(resp);
+        return;
+    }
+
     auto users = User::getAllUsers();
     usersJson["count"] = static_cast<int>(users.size());
     usersJson["users"] = Json::arrayValue;
