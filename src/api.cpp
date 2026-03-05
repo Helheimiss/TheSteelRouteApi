@@ -54,6 +54,55 @@ void api::orders::create(const drogon::HttpRequestPtr &req, HttpResponseCallback
     callback(resp);
 }
 
+void api::orders::getAll(const drogon::HttpRequestPtr &req, HttpResponseCallback &&callback,
+    std::string &&token) const {
+    Json::Value ordersJson;
+
+    auto decoded = jwt::decode(token);
+
+    if (!Token::verifyToken(token)) {
+        auto resp = drogon::HttpResponse::newHttpJsonResponse(ordersJson);
+        resp->setStatusCode(drogon::HttpStatusCode::k401Unauthorized);
+        callback(resp);
+        return;
+    }
+
+    auto Id = stoi(decoded.get_subject());
+    auto query = DATA::DataBase.sqlQuery();
+
+    query.prepare("SELECT Id ,UserId ,FromAddress ,ToAddress ,TravelTimeMinutes ,DistanceKm ,TravelDate ,TravelTime ,PassengerCount ,Status ,BusId ,DriverId, CreatedAt "
+                  "FROM Orders WHERE UserId = ?;");
+    query.bindValue(0, Id);
+
+    if (!query.exec())
+        throw std::runtime_error(query.lastError().text().toStdString());
+
+    ordersJson["count"] = query.numRowsAffected();
+    ordersJson["orders"] = Json::arrayValue;
+
+    while (query.next()) {
+        Json::Value orderJson;
+        orderJson["Id"] = query.value(0).toString().toStdString();
+        orderJson["UserId"] = query.value(1).toString().toStdString();
+        orderJson["FromAddress"] = query.value(2).toString().toStdString();
+        orderJson["ToAddress"] = query.value(3).toString().toStdString();
+        orderJson["TravelTimeMinutes"] = query.value(4).toString().toStdString();
+        orderJson["DistanceKm"] = query.value(5).toString().toStdString();
+        orderJson["TravelDate"] = query.value(6).toString().toStdString();
+        orderJson["TravelTime"] = query.value(7).toString().toStdString();
+        orderJson["PassengerCount"] = query.value(8).toString().toStdString();
+        orderJson["Status"] = query.value(9).toString().toStdString();
+        orderJson["BusId"] = query.value(10).toString().toStdString();
+        orderJson["DriverId"] = query.value(11).toString().toStdString();
+        orderJson["CreatedAt"] = query.value(12).toString().toStdString();
+
+        ordersJson["orders"].append(orderJson);
+    }
+
+    auto resp = drogon::HttpResponse::newHttpJsonResponse(ordersJson);
+    callback(resp);
+}
+
 void api::user::login(const drogon::HttpRequestPtr &req, HttpResponseCallback &&callback, std::string &&login, std::string &&password) const {
     auto resp = drogon::HttpResponse::newHttpResponse(drogon::HttpStatusCode::k200OK, drogon::ContentType::CT_TEXT_PLAIN);
 
